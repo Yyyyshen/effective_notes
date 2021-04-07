@@ -5,6 +5,16 @@ VisualStudioVersion = 16.0.31129.286
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "effective_notes", "effective_notes\effective_notes.vcxproj", "{99BD5A98-2BE4-45DE-94B7-A70AC59C6501}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "effective_cpp", "effective_cpp", "{47933D13-0023-4411-A729-E794B022F4F7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "more_effective_cpp", "more_effective_cpp", "{11592C03-CBD1-4175-93B6-B2F6221B5F91}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "effective_stl", "effective_stl", "{10ADA691-A537-43DD-9F3A-BCB10F6E3E3D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "exceptional_cpp", "exceptional_cpp", "{A8695F27-BFDE-4388-9389-9FDA612119D4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "more_exceptional_cpp", "more_exceptional_cpp", "{47F79D9F-D42D-40AF-9BF6-15ECF662B386}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
