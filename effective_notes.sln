@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "exceptional_cpp", "exceptio
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "more_exceptional_cpp", "more_exceptional_cpp", "{47F79D9F-D42D-40AF-9BF6-15ECF662B386}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "effective_cpp_01", "effective_cpp_01\effective_cpp_01.vcxproj", "{A509D95B-20C2-45B9-965F-185060DCD760}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,9 +33,20 @@ Global
 		{99BD5A98-2BE4-45DE-94B7-A70AC59C6501}.Release|x64.Build.0 = Release|x64
 		{99BD5A98-2BE4-45DE-94B7-A70AC59C6501}.Release|x86.ActiveCfg = Release|Win32
 		{99BD5A98-2BE4-45DE-94B7-A70AC59C6501}.Release|x86.Build.0 = Release|Win32
+		{A509D95B-20C2-45B9-965F-185060DCD760}.Debug|x64.ActiveCfg = Debug|x64
+		{A509D95B-20C2-45B9-965F-185060DCD760}.Debug|x64.Build.0 = Debug|x64
+		{A509D95B-20C2-45B9-965F-185060DCD760}.Debug|x86.ActiveCfg = Debug|Win32
+		{A509D95B-20C2-45B9-965F-185060DCD760}.Debug|x86.Build.0 = Debug|Win32
+		{A509D95B-20C2-45B9-965F-185060DCD760}.Release|x64.ActiveCfg = Release|x64
+		{A509D95B-20C2-45B9-965F-185060DCD760}.Release|x64.Build.0 = Release|x64
+		{A509D95B-20C2-45B9-965F-185060DCD760}.Release|x86.ActiveCfg = Release|Win32
+		{A509D95B-20C2-45B9-965F-185060DCD760}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A509D95B-20C2-45B9-965F-185060DCD760} = {47933D13-0023-4411-A729-E794B022F4F7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {23556592-88DC-4A2F-B192-9A4280A3EABA}
