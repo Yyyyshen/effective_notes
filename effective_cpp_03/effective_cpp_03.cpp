@@ -114,6 +114,121 @@ protected:
 
 //条款07：为多态基类声明virtual析构函数
 //Declare destructors virtual in polymorphic base classes
+//
+//在工厂（factory）函数中，搭配多态的性质，一般会返回一个base class指针，指向新生成的derived class对象
+//返回的对象位于堆（heap）中，为了避免内存泄漏，都应在适当位置delete
+//在删除时，使用的时base class指针，删除的对象是drived class对象，如果base class有一个non-virtual析构函数，会产生问题
+//经常会发生的是对象的derived成分没被销毁，而virtual关键字可以解决这个问题；虚的机构函数能够保证，基类指针指向子类对象时，会析构掉子类对象的部分
+//当class不被当成base class，令其析构为虚函数并不合理，每个带有virtual函数的class都有一个对应的vtbl（虚函数表）由一个vptr指向
+//这会增加对象的体积
+//所以，一般当class内至少有一个virtual函数（代表可能是多态情况），才将析构函数声明为virtual
+//另外
+//切勿试图继承“带有non-virtual析构函数”的class，否则可能因为对象销毁不彻底而出现错误
+//例如
+class SpecialString : public std::string {};//试图继承string
+void test_virtual() {
+	SpecialString* pss = new SpecialString();
+	std::string* ps;
+	ps = pss;
+	delete ps;//SpecialString析构不会被调用，会有资源泄漏
+}
+//
+//声明为virtual的函数若没有实现，则成为纯虚函数（pure virtual）
+//带有纯虚函数的类为抽象类，不能被实例化
+class AMOV {
+public:
+	virtual ~AMOV() = 0;
+};
+//析构的机制是，最深层派生的class析构最先被调用，之后层层向上；编译器会在AMOV的派生类的析构函数中创建一个对~AMOV的调用
+//对此，单纯的声明为纯虚函数会造成链接错误，所以需要提供一个定义
+AMOV::~AMOV() {}
+//
+//总结
+//带有多态性质的base classes应该声明为一个virtual析构函数；如果class带有任何virtual函数，就应该由一个virtual析构函数
+//如果作为base classes但并不是为了多态（polymorphically）就不该声明virtual析构函数
+
+
+//条款08：别让异常逃离析构函数
+//Prevent exceptions from leaving destructors
+//
+//C++不禁止析构函数抛异常，但不鼓励这样做，例如
+class Widget {
+public:
+	~Widget() {}//假设可能抛异常
+};
+#include <vector>
+void doSomething() {
+	std::vector<Widget> vec;
+	//...
+}
+//当vector被销毁，销毁时析构内含所有Widgets
+//若含有多个Widgets，在析构第一个元素时抛出异常，其他几个还是应该被销毁，继续调用的时候，又抛出异常
+//当异常同时发生时，程序可能会结束执行或者导致不明确行为
+//一个例子
+class DBConnection {
+public:
+	static DBConnection& create() {
+		static DBConnection db;//模拟一个DB连接对象
+		return db;
+	}
+	void close() {
+		//关闭连接，错误时抛异常
+	}
+};
+class DBManager {
+private:
+	DBConnection db;
+public:
+	DBManager(DBConnection& dbc) :db(dbc) {}
+	~DBManager();
+	/*{
+		db.close();
+	}*/
+};
+void test_exception_in_dtor() {
+	DBManager dbm(DBConnection::create());
+	//...
+	//离开作用域后，局部变量销毁，如果此时close产生异常，则难以处理
+}
+//解决方法一：
+DBManager::~DBManager() {
+	try {
+		db.close();
+	}
+	catch (...) {
+		//关闭程序或做日志记录
+	}
+}
+//这并非最佳做法，因为有些错误是不该被忽略的，可以重新设计
+class DBManager2 {
+private:
+	DBConnection db;
+	bool closed;//记录状态
+public:
+	void close() {
+		db.close();
+		closed = true;
+	}
+	~DBManager2() {
+		if (!closed) {
+			try {
+				db.close();
+			}
+			catch (...) {
+				//关闭程序或记录日志
+			}
+		}
+	}
+};
+//这就将close可能产生的问题交给调用者自行处理
+//虽然析构中还是可能忽略异常，但至少提供了处理异常的可能性
+
+
+//条款09：绝不在构造和析构过程中调用virtual函数
+//Never call virtual functions during construction or destruction
+//
+//
+//
 
 
 int main()
