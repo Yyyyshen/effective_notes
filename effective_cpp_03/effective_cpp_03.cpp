@@ -227,11 +227,193 @@ public:
 //条款09：绝不在构造和析构过程中调用virtual函数
 //Never call virtual functions during construction or destruction
 //
+class BaseClass {
+public:
+	BaseClass();
+	virtual void log() const = 0;
+};
+BaseClass::BaseClass() {
+	log();//构造中调用虚函数
+}
+void BaseClass::log() const {} //纯虚函数也要给一个定义，否则无法链接
+class DerivedClass : public BaseClass {
+public:
+	virtual void log() const {
+		std::cout << "DerivedClass log()" << std::endl;
+	}
+};
+void test_virtual_in_tor() {
+	DerivedClass d;//不会调用Derived Class的log
+}
+//在派生类被构造前，基类构造先进行，此时调用的log为base class中的log
+//相对于derived class来说，base class构造期间，虚函数表中只有base class的virtual函数
+//或者可以说，base class构造期间，virtual函数不是virtual函数
+//这对语言来说是合理的，当base class构造执行时derived class成员尚未初始化，如果此时调用virtual下降到derived class层，则极有可能使用到派生类的未初始化成员
+//这样做是危险的，所以C++不允许这样做
+//更根本的原因是
+//在derived class对象的base class构造期间，对象类型会被看作base class，所以virtual函数会被编译器resolve to base class
+//只有当对象在derived class构造函数开始执行时，才会成为一个derived class对象
 //
+//这个行为同理于析构函数
+//一旦derived class析构函数执行，对象内的derived class成员便呈现未定义值，进入base class时，便成为一个base对象
+//一个解决方案是，在derived class构造函数传递必要信息给base class构造，然后在基类中以non-virtual形式调用函数
+class BaseClass2 {
+public:
+	explicit BaseClass2(const std::string& logInfo);
+	void log(const std::string& logInfo) const {};//声明为non-virtual函数
+};
+BaseClass2::BaseClass2(const std::string& logInfo) {
+	log(logInfo);
+}
+class DerivedClass2 :public BaseClass2 {
+public:
+	DerivedClass2(/*params*/) :BaseClass2(createLogString(/*params*/)) {};//将信息传给基类
+private:
+	static std::string createLogString(/*params*/) { return "DerivedClassLog"; }
+	//比起在成员初值列内给予基类所需数据，使用一个辅助函数往往更好，并且声明为static也就不可能指向未初始化变量
+};
+void test_virtual_in_tor_2() {
+	DerivedClass2 d2;
+}
+
+
+//条款10：令operator=返回一个reference to *this
+//Have assignment operators return a reference to *this
 //
+void test_assignment() {
+	//赋值形式
+	int x, y, z;
+	x = y = z = 7;//连续赋值，符合右结合律，解析为x=(y=(z=7)));
+}
+//为了支持这种赋值方式，赋值操作符函数必须返回一个reference指向操作符左侧实参，而class中成员函数的左侧实参一般为*this被省略，所以写法如下
+class Widget1 {
+public:
+	Widget1& operator=(const Widget1& rhs) {
+		//...
+		return *this;//返回左侧对象，也就是当前对象
+	}
+};
+//此协议同样适用于其他赋值运算（并不是强制要求，但最好都来遵守的协定）
+
+
+//条款11：在operator=中处理自我赋值
+//Handle assignment to self in operator=
+//
+class Widget2 {};
+void test_assignment_to_self() {
+	Widget2 w;
+	//...
+	w = w;//赋值给自己，虽然不合理但合法
+	//有时不会这么明显，例如
+	Widget2 w1;
+	Widget2 w_arr[3] = { w,w1,w };
+	//...
+	w_arr[0] = w_arr[2];
+	//或者两个指针指向同一个东西，也是潜在的自我赋值
+	Widget2* pw1, * pw2;
+	pw1 = &w;
+	pw2 = &w;
+	*pw1 = *pw2;
+}
+//这些不明显的自我赋值，一般来说是别名带来的结果
+//如果某段代码操作pointers或references而他们被用来指向多个相同类型对象，就需要考虑对象是否为同一个（多态使用中不同类型指针也可能指向同一个对象）
+//当使用对象来自行管理资源，可能会出现停止使用资源前就释放了
+class A {};
+class Widget3 {
+	//位图类，一般需要自己管理资源分配
+private:
+	A* pw;//指向一个堆中分配的对象
+public:
+	Widget3() {
+		pw = new A();
+	}
+	//...
+	/*Widget3& operator=(const Widget3& rhs) {
+		delete pw;//删除当前所指对象
+		pw = new A(*rhs.pw);//重新在堆中分配一个对象并令成员指针指向它
+		return *this;//符合条款10
+	}*/
+	Widget3& operator=(const Widget3& rhs);
+	void swap(Widget3& rhs);
+};
+//上述代码表面合理，但自我赋值时不安全
+//如果*this和rhs为同一个对象，delete执行后，rhs的A对象也被销毁了，操作完成后，对象持有一个指针指向一个已被删除的对象
+//所以需要在赋值操作符的最前端做一个证同测试，检测是否为自身赋值
+/*Widget3& Widget3::operator=(const Widget3& rhs) {
+	if (this == &rhs) return *this;//如果是自身，直接返回
+	delete pw;
+	pw = new A(*rhs.pw);
+	return *this;
+}*/
+//
+//另外，除了自我赋值安全，operator=还通常需要处理“异常安全性”，而异常安全性处理之后，往往自动获得自我赋值安全性
+/*Widget3& Widget3::operator=(const Widget3& rhs) {
+	A* pOri = pw;//记录下之前pw
+	pw = new A(*rhs.pw);//令pw指向新的副本
+	delete pOri;//此时再去删除原来的pw
+	return *this;
+}*/
+//这样即使new操作由于内存不足等原因抛出异常，即使没有证同测试，这段代码还是能处理自我赋值，只是效率没有上面的方式高
+//
+//另一个代替方案——copy and swap，确保异常安全及自我赋值安全
+void Widget3::swap(Widget3& rhs) {
+	//...交换*this和rhs数据，后面条款还有详细说明
+}
+Widget3& Widget3::operator=(const Widget3& rhs) {
+	Widget3 tmp(rhs);//copy构造制作一个副本
+	swap(tmp);//交换副本和*this数据
+	return *this;
+}
+//
+//总结，三种方案：比较两对象地址、设计语句顺序、copy-and-swap
+
+
+//条款12：复制对象时勿忘其每一个成分
+//Copy all parts of an object
+// 
+//条款5中了解到，类中copy构造和copy assignment操作符的拷贝操作，编译器自动生成的版本行为是：将被拷贝对象的所有成员都拷贝一份
+//如果想要自己声明及定义
+class Widget4 {
+public:
+	//...其他构造
+	Widget4(const Widget4& rhs);//copy构造
+	Widget4& operator=(const Widget4& rhs);//copy assignment
+private:
+	std::string str;
+	A a;
+};
+Widget4::Widget4(const Widget4& rhs) :str(rhs.str) {
+	std::cout << "Widget4 copy ctor" << std::endl;
+}
+Widget4& Widget4::operator=(const Widget4& rhs) {
+	std::cout << "Widget4 copy assignment operator" << std::endl;
+	str = rhs.str;//复制rhs的str数据
+	return *this;
+}
+//上述写法为局部拷贝，添加新的成员时（例如添加一个A），编译器也不会报错，这就需要每次添加成员后自己记着修改copying函数
+//在发生继承时，更要注意这个问题
+class DerivedWidget4 : public Widget4 {
+public:
+	DerivedWidget4(const DerivedWidget4& rhs);
+	DerivedWidget4& operator=(const DerivedWidget4& rhs);
+private:
+	int i;
+};
+DerivedWidget4::DerivedWidget4(const DerivedWidget4& rhs)
+	:Widget4(rhs),	//调用base class的copy构造，如果没有这样明确写出，会默认使用default构造
+	i(rhs.i)	//拷贝自身成员
+{
+	std::cout << "DerivedWidget4 copy ctor" << std::endl;
+}
+DerivedWidget4& DerivedWidget4::operator=(const DerivedWidget4& rhs) {
+	Widget4::operator=(rhs);//手动调用base class成分进行拷贝
+	i = rhs.i;
+	return *this;
+}
+//另外，copy构造和copy assignment两个copy操作不要相互调用，这是无意义的；如果有重复代码，应封装为另一个函数，之后共同调用它
 
 
 int main()
 {
-	std::cout << "Hello World!\n";
+	test_virtual_in_tor();
 }
