@@ -2,6 +2,7 @@
 //
 
 #include <iostream>
+#include <vector>
 
 /**
  * 4.设计与声明
@@ -127,7 +128,7 @@ void do_something_to_b(const B& b) {}
 //以一个有理数设计为例
 class y_rational {
 public:
-	y_rational(int n = 0, int d = 1) :n_(n), d_(d) {}
+	/*explicit*/ y_rational(int n = 0, int d = 1) :n_(n), d_(d) {} //如果使用了explicit ，下面的*符号就不支持int与本类型相乘了（涉及下面条款24）
 private:
 	int n_, d_;//分子分母
 	friend const y_rational operator*(const y_rational& lhs, const y_rational& rhs);
@@ -180,11 +181,112 @@ inline const y_rational operator*(const y_rational& lhs, const y_rational& rhs) 
 //以一个浏览器功能为例
 class y_browser {
 public:
-	void clear_cache() {};
-	void clear_history() {};
-	void clear_cookies() {};
+	void clear_cache() {}
+	void clear_history() {}
+	void clear_cookies() {}
+
+	void clear_everything() {
+		clear_cache();
+		clear_history();
+		clear_cookies();
+	}
 };
+//一般都会有一个需求，清除所有数据，也就是同时调用上述三个函数
+//两个方案：成员函数clear_everything和非成员函数clear_browser
+void clear_browser(y_browser& browser) {
+	browser.clear_cache();
+	browser.clear_history();
+	browser.clear_cookies();
+}
+//虽然总是强调封装，似乎应该放在class内，但这种情况下，non-member函数带来的封装性却更高
+//非成员函数对类的相关机能有较大的包装弹性（packaging flexibility），较低的编译依赖性，增加可延伸性
 //
+//从思想上去谈这样做的原因
+//一个东西被封装，应该意味着它不再可见，这才能有更大的弹性去改变它
+//对于一个member函数，可以访问class内private成员；而non-member、non-friend函数，无法访问这些
+//所以两者选择，后者提供了更大的封装性，因为它并不增加“能够访问class内private成分”的函数数量
+//这里的非成员、非友元只是针对于当前class，它其实可以成为另一个class的member，例如作为工具类的stsatic member函数
+//只不过C++很少这样做，更常见的是让类和该函数放在同一个命名空间
+//namespace可以为跨多个源码文件编写同一群组功能提供便利，增加扩展性，而类不能跨越
+//
+
+
+//条款24：若所有参数都需要类型转换，请为此采用non-member函数
+//Declare non-member functions when type conversions should apply to all parameters
+//
+//继续看上面有理数y_rational例子
+void test_rational() {
+	y_rational r1 = (1, 8);
+	y_rational r2 = (1, 2);
+	y_rational result = r1 * r2;//实现过operator*，没问题
+	result = r2 * 2;//尝试混合运算，能通过
+	result = 2 * r2;//能通过
+}
+//如果只在member成员函数中实现了 const y_rational operator*(const y_rational& rhs) const;
+//那么上述两种混合运算只有第一个能通过，反过来2*r2则不行，因为int没有实现与我们自定义类型相乘，编译器会去找operator*(int,y_rational)，如果也找不到，就通不过
+//而之前的条例中，我们就直接使用了一个non-member的操作符函数，能够直接接收左右两个操作数
+//接下来的问题就是我们声明的操作符函数虽然能够接收两个操作数，但类型都是自定义类型，为什么能接受一个int来配合？
+//这里发生了隐式类型转换，编译器看到一个int而函数需要一个y_rational，那么它会直接用这个int来进行构造自定义类型，如同下面方式
+void test_implicit() {
+	y_rational r1 = (1, 2);
+	//result = r1 * 2;
+	const y_rational temp(2);//编译器类似去做了这样一件事
+	y_rational result = r1 * temp;
+}
+//这也是为什么当我们明确知道不应该隐式转换时使用explicit修饰构造函数的原因
+//并且，只有参数被列于参数列表内是，才能参与隐式转换，这也是为什么member成员函数中，被隐喻的参数*this不能参与隐式转换的原因
+//另外，一般来说与某个class相关但不成为成员函数时，应该声明为friend，这在本例中不适用（书中的理念应该是尽量避免使用友元函数）
+
+
+//条款25：考虑支持一个不抛异常的swap函数
+//Consider support for a non-throwing swap
+//
+//swap原本是一个STL函数，但后面常见于异常安全性和自我复制处理的常见机制
+//功能为置换两对象值，实现如下
+template<typename T>
+void y_swap(T& a, T& b) {
+	T temp(a);//copy构造创建一个缓存对象
+	a = b;//开始交换
+	b = temp;//copy assignment
+}
+//本质就是三次拷贝操作，而对于某些情况，这些复制动作并没有必要，比如以pimpl（pointer to implementation）手法设计的类
+class WidgetImpl {
+public:
+	//...
+private:
+	int a, b, c;
+	std::vector<double> v;//存储很多数据
+};
+class Widget {
+public:
+	Widget(const Widget& rhs) :pImpl(rhs.pImpl) {}
+	//copy操作其实就是置换其指针
+	Widget& operator=(const Widget& rhs) {
+		*pImpl = *(rhs.pImpl);
+	}
+	void swap(Widget& other);//留待下面说明和实现
+private:
+	WidgetImpl* pImpl;//以指针存储，所指对象内含Widget数据
+};
+//在交换两个Widget对象时，我们置换其pImpl指针即可，但缺省的swap会复制三次Widgets，相应的还会复制三个WidgetImpl，效率很低
+//我们希望能够告诉swap，一些特定类型，交换对象以指定的操作来进行
+//思路上可以将swap针对Widget特化
+/*template<>
+void y_swap<Widget>(Widget& a, Widget& b) {
+	//swap(a.pImpl, b.pImpl);//这是思路，并不能通过编译，因为成员变量时private的
+}*/
+//由于外部函数无法访问private成员，可声明一个public成员函数做真正的置换工作，然后将swap特化，令他调用该成员函数
+void Widget::swap(Widget& other) {
+	//using std::swap;//这里是因为在函数重名情况下，需要告诉编译器去调用哪一个swap；我这里自定义的函数名不一样，所以不需要类似代码
+	y_swap(pImpl, other.pImpl);//只置换指针
+}
+template<>
+void y_swap<Widget>(Widget& a, Widget& b) {
+	a.swap(b);//使用成员函数实现
+}
+//这样不仅能通过编译，也与STL容器有一致性（STL容器就是都提供了swap成员函数和std::swap特化版本）
+//成员版swap函数不可抛出异常，因为常用于提供异常安全性保障
+
 
 
 int main()
