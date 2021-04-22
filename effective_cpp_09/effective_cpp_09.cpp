@@ -169,7 +169,49 @@ namespace yshen {
 
 void* foo = nullptr;
 
+//条款53：不要忽视编译器的警告
+//Pay attention to compiler warnings
+// 
+//其他语言中警告可能相对无害，但C++中有时却会引起严重问题
+// 严肃对待编译器发出的警告信息，努力在编译器的最高警告级别下争取无任何警告
+// 不要过度依赖编译器报警能力，不同编译器对待同一段代码的态度并不一定相同
 //
+
+
+//条款54：熟悉包括tr1在内的标准程序库
+//Familiarize yourself with the standard library,including tr1
+// 
+//标准库主要内容：
+// STL
+// iostreams
+// 国际化支持
+// 数值处理
+// 异常阶层体系
+// 
+//TR1组件：
+// 智能指针
+// function
+// bind
+// hashtables
+// 正则
+// tuples
+// array
+// mem_fn
+// reference_wrapper
+// 随机数
+// 数学特殊函数
+// type traits
+// result_of
+//
+
+
+//条款55：熟悉Boost
+//Familiarize yourself with Boost
+// 
+//高质量源码开放跨平台跨编译器的程序库
+// https://boost.org
+// 
+//常用asio等
 //
 
 
