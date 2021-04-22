@@ -162,6 +162,16 @@ namespace yshen {
 //
 
 
+/**
+ * 9.杂项讨论
+ * Miscellany
+ */
+
+void* foo = nullptr;
+
+//
+//
+
 
 int main()
 {
