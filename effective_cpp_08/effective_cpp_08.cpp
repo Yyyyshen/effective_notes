@@ -64,8 +64,48 @@ void print_something(const Container& container) {
 //条款44：将与参数无关的代码抽离template
 //Factor parameter-independent code out of templates
 // 
+//使用template会导致代码膨胀，因为目标码中会产生不同类型的重复代码
+//所以任何template代码都不该与某个造成膨胀的template参数产生依赖关系
+//因非类型模板参数造成的代码膨胀通常可以避免，做法是以函数参数或成员变量去代替
+//因类型参数造成的代码膨胀往往可以降低，做法是让带有完全相同二进制表述的具象类型共享实现码
+// （例如int和long在一些平台上就是相同的，还有指针在大多数平台有相同的二进制表示）
 //
+
+
+//条款45：运用成员函数模板接受所有兼容类型
+//Use member function templates to accept "all compatible types"
+// 
+//如果声明member templates用于泛化copy构造或泛化assignment操作，还是需要声明正常的copy构造和copy assignment
 //
+
+
+//条款46：需要类型转换时请为模板定义非成员函数
+//Define non-member functions inside template when type conversions are desired
+// 
+//当编写一个class template，而他所提供的“与此tmeplate相关的”函数支持“所有参数之隐式类型转换”时
+// 请将那些函数定义为class template内部的friend函数
+//
+
+
+//条款47：请使用traits classes表现类型信息
+//Use traits classes for information about types
+// 
+//traits class使类型相关信息在编译器可用，以template及templates特化完成
+//整合重载计数后，traits classes有可能在编译期对类型执行if else测试
+// 
+//主要应用为STL中判断迭代器类型
+//
+
+
+//条款48:认识template元编程
+//Be aware of template metaprogramming
+// 
+//TMP模板元编程可将工作由运行期移往编译期，因而得以实现早期错误侦测和更高的执行效率
+//TMP可被用来生成“基于政策选择组合”的定制代码，也可用来避免生成对某些特殊类型并不适合的代码
+//
+
+
+//本节很多内容都在学习STL中体会过
 
 
 int main()
