@@ -45,11 +45,81 @@ using namespace std;
 
 //条款12：了解“抛出一个exception”与“传递一个参数”或“调用一个虚函数”之间的差异
 // 
+class Widget {};
+void func(Widget& w) {}
+//catch (Widget& w) {}
 //
+//异常从语法上看，从抛出端传递一个异常到catch语句中，很类似于函数调用时传递一个变量
+//
+istream operator>>(istream& s, Widget& w) { /* 从输入流读入一个Widget */ }
+void throw_widget() {
+	Widget local_w;
+	cin >> local_w;//传递引用，没有发生复制
+	throw local_w;
+}
+//函数传参和异常传递都有三种方式：by value，by reference，by pointer
+//不同的是，如上例，catch时不论是以值或引用传递，都会发生local_w的拷贝行为（以值传递甚至会发生两次复制，一次是产生的临时对象，还有一次是将临时对象复制到参数中）
+// 因为离开生存空间后，这个临时变量就析构了，这就是为什么C++特别声明，一个对象被抛出作为exception时，总会发生复制
+// （即使不是因为离开scope而析构，比如staic变量，依然会产生副本，这也是为什么相比函数传参，抛异常效率更低）
+// 也意味着，即使是引用方式catch异常，也并不能修改这个变量，改变的只能是其副本
+// 
+//对象被当作exception进行复制时，复制行为由copy constructor执行，对应的是对象的静态类型
+// 就是说，如果有继承关系在其中，使用了派生类但最终以基类的引用抛出异常，则会认定为是基类对象，这可能并非设计者所想要的
+// 
+//看一下catch块中继续传递异常的两个方式
+// catch(Widget& w){
+//		...
+//		throw;//重新抛出异常，继续传播
+// }
+// catch(Widget& w){
+//		...
+//		throw w;//传播被捕获异常的副本
+// }
+// 即使不考虑拷贝行为产生的性能成本，这两种写法也是有区别的
+// 由于是静态类型，所以应当使用第一个方式，而且比较有效率
+//
+
+
+//条款13：以by reference方式捕捉exceptions
+// 
+//考虑到效率，在选择传递异常方式时，理论上应该选择by pointer
+// 而在此过程中，需要保证指针所指对象依然存在，如果指向了跳出scope后就析构的临时对象，就会出问题
+// 如果使用了heap object，避免了指向不存在对象，却容易因不好处理删除逻辑而造成资源泄露
+//
+//以值传递会复制两次，效率较差
+//所以一般都会选择catch-by-reference
+//
+
+
+//条款14：明智运用exception specifications
+// 
+void f1() {};
+void f2() throw(int) {
+	//...
+	f1();//合法，即使是f1可能抛出违反f2中exception specifications的异常
+};
+//
+//虽然合法，但一般不应该这样设计
+// 
+//在template中
+// 没有任何方法可以知道template的类型参数可能抛出什么exceptions
+// 所以，不要为template提供exception specifications
+// 
+//另外，避免unexpected方式还有
+// 处理系统可能抛出的exceptions
+// （常见bad_alloc）
+//
+
+
+//条款15：了解异常处理（exception handling）的成本
+// 
+//应尽量避免使用try/catch块
+// 代码膨胀
+// 效率较低
 //
 
 
 int main()
 {
-    std::cout << "Hello World!\n";
+	std::cout << "Hello World!\n";
 }
