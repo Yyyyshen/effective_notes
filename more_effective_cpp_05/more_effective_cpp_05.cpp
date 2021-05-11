@@ -227,6 +227,27 @@ T& rc_ptr<T>::operator*() const { return *pointee; }
 //
 
 
+//条款30：Proxy classes（替身类、代理类）
+// 
+//例如二维数组，可以分解为嵌套的一维数组
+template<class T>
+class array_2d {
+public:
+	class array_1d {
+	public:
+		T& operator[](int index);
+	};
+	array_1d operator[](int index);
+};
+//
+
+
+//条款31：让函数根据一个以上的对象类型来决定如何虚化
+// 
+//
+//
+
+
 int main()
 {
 	std::cout << "Hello World!\n";
