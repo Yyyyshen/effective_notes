@@ -177,6 +177,54 @@ void rc_object::mark_unshareable() { shareable = false; }
 bool rc_object::is_shareable() const { return shareable; }
 bool rc_object::is_shared() const { return ref_count > 1; }
 //
+//自动操作引用次数
+// 上面的类还是需要手动操作add或remove操作
+// 我们希望把这些动作移至可复用的class内
+// 使用者就不需要考虑细节
+template<class T>
+class rc_ptr {
+public:
+	rc_ptr(T* real_ptr = 0);
+	rc_ptr(const rc_ptr& rhs);
+	~rc_ptr();
+	rc_ptr& operator=(const rc_ptr& rhs);
+	T* operator->() const;
+	T& operator*() const;
+private:
+	T* pointee;
+	void init();
+};
+template<class T>
+rc_ptr<T>::rc_ptr(T* real_ptr /* = 0 */) :pointee(real_ptr) { init(); }
+template<class T>
+rc_ptr<T>::rc_ptr(const rc_ptr& rhs) : pointee(rhs.pointee) { init(); }
+template<class T>
+void rc_ptr<T>::init() {
+	if (pointee == 0) return;
+	if (pointee->is_shareable() == false) pointee = new T(*pointee);//不可共享则复制一份
+	pointee->add_reference();
+}
+template<class T>
+rc_ptr<T>::~rc_ptr() {
+	if (pointee) pointee->remove_reference();
+}
+template<class T>
+rc_ptr<T>& rc_ptr<T>::operator=(const rc_ptr& rhs) {
+	if (pointee != rhs.pointee) {
+		if (pointee)
+			pointee->remove_reference();//移除当前实值引用次数
+		pointee = rhs.pointee;
+		init();
+	}
+	return *this;
+}
+template<class T>
+T* rc_ptr<T>::operator->() const { return pointee; }
+template<class T>
+T& rc_ptr<T>::operator*() const { return *pointee; }
+//
+//可结合两个类实现一个带引用计数的应用类
+//
 
 
 int main()
