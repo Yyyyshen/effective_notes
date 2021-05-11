@@ -7,7 +7,22 @@
  * 参考《Effective STL》
  */
 
+using namespace std;
+
+/**
+ * 1容器
+ */
+
+void* foo = nullptr;
+
+//
+//
+
+
+//
+//
+
 int main()
 {
-    std::cout << "Hello World!\n";
+	std::cout << "Hello World!\n";
 }
