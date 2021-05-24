@@ -2,6 +2,7 @@
 //
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <list>
 
@@ -90,8 +91,57 @@ public:
 //
 
 
+//第4条：调用empty而不是检查size()是否为0
+// 
+//对于所有标准容器，empty使常数时间操作；而对于一些list实现，size消耗线性时间
+// 由于list的链接操作，size操作一般是遍历一遍来计数的
+//
+
+
+//第5条：区间成员函数优先于与之对应的单元素成员函数
+// 
+//两个vector，要使v1内容与v2后半部分内容相同，需要怎样的赋值操作
+// 最佳答案 v1.assign(v2.begin()+v2.size()/2,v2.end())
+// 
+//也许copy也能采用一条语句完成这个任务，但内部也是使用了循环的
+//
+//选择区间成员函数的充分理由
+// 代码更简洁
+// 清楚的表达意图
+// 效率更高
+//
+
+
+//第6条；当心C++编译器最烦人的分析机制
+//
+//从一个存有整数的文件中读取数据存放到list
+void test_read_file() {
+	ifstream data_file("ints.dat");
+	list<int> data_list(istream_iterator<int>(data_file), istream_iterator<int>());
+}
+//这种做法看起来是可以的，能通过编译，但运行时什么都不会做
+// 没有读取任何数据，也不会创建list
+// 第二条语句并没有声明一个list，也没有调用构造函数
+//具体做了什么需要分析一哈
+int f(double d);//声明了一个返回int和带double参数的函数
+int f(double(d));//意义同上，d两边的括号会被忽略
+int f(double);//意义相同，省略了参数名称
+int g(double(*pf)());//以函数指针为参数
+int g(double pf());//同上，pf为隐式指针
+int g(double());//同上，pf被省略
+//所以，上面第二句代码的含义是，声明了一个函数叫data_list
+// 返回值为list<int>
+// 第一个参数为data_file，两边括号被忽略，类型为istream_iterator<int>
+// 第二个参数为一个函数指针，忽略了参数名，该函数指针返回一个istream_iterator<int>
+// （这在vs这样的ide中就比较容易发现，因为颜色的区分就能看出是一个函数声明）
+//
+
+
+//第7条：如果容器中包含了通过new操作创建的指针，切记在容器对象析构前将指针delete掉
 //
 //
+//
+
 
 
 int main()
