@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <list>
+#include <algorithm>
 
 /**
  * 参考《Effective STL》
@@ -139,9 +140,38 @@ int g(double());//同上，pf被省略
 
 //第7条：如果容器中包含了通过new操作创建的指针，切记在容器对象析构前将指针delete掉
 //
-//
+void cause_memory_leak() {
+	vector<widget*> vec_pw;
+	vec_pw.push_back(new widget);
+	//...
+}//跳出作用域，vector析构，发生widget泄漏
+//在设定上，通过new创建的对象只有编写者才直到是否该被释放
+// 最简单的做法，一般是在析构前遍历delete指针
+// 还可以使用for_each，编写仿函数操作
+template<typename T>
+struct delete_obj : public unary_function<const T*, void> {
+	void operator()(const T* ptr) const {
+		delete ptr;
+	}
+};
+void deal_memory_leak() {
+	vector<widget*> vec_pw;
+	//简单处理
+	for (auto i = vec_pw.begin(); i != vec_pw.end(); ++i)
+		delete* i;
+	//for_each
+	for_each(vec_pw.begin(), vec_pw.end(), delete_obj<widget*>());
+}
+//但仍然存在异常安全和类型安全的问题
+//最简单的是用智能指针代替指针
 //
 
+
+//第8条：切勿创建包含auto_ptr的容器对象
+// （已经弃用，了解理论即可）
+// 
+//
+//
 
 
 int main()
