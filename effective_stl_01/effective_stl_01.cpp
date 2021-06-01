@@ -6,6 +6,7 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <set>
 
 /**
  * 参考《Effective STL》
@@ -168,9 +169,94 @@ void deal_memory_leak() {
 
 
 //第8条：切勿创建包含auto_ptr的容器对象
-// （已经弃用，了解理论即可）
+// （C++11已经弃用，了解理论即可，没弃用之前也不推荐使用）
 // 
+//可能导致排序等操作中，元素内容会被改变
 //
+
+
+//第9条：慎重选择删除元素的方法
+// 
+//不同的容器类型，在删除元素时采取不同办法
+// 对于连续内存（vector、deque或string）容器，最好的办法是erase-remove惯用方法
+void test_delete() {
+	vector<int> vec_i;
+	//此remove位于algorithm，不会删除元素，只是把符合条件的元素移动到末尾，并返回指向移动后元素起始位置的迭代器
+	//再利用erase方法删除指定范围元素，这样可以减少每次删除元素时的位移操作
+	vec_i.erase(remove(vec_i.begin(), vec_i.end(), 1), vec_i.end());
+	//对于list，则可以使用成员函数remove
+	list<int> list_i;
+	list_i.remove(1);
+}
+// 对于标准关联容器（set、multiset、map、multimap），任何remove操作都是错误的，可能会覆盖容器值甚至破坏容器
+void test_delete2() {
+	set<int> set_i;
+	//正确做法是使用erase
+	set_i.erase(1);
+}
+//满足特定条件进行删除操作时
+// 对于vector、string、deque，使用erase-remove_if
+// 对于list，使用list::remove_if
+// 标准关联容器，使用remove_copy_if和swap，或写循环来遍历元素，并且erase时，要进行后缀递增
+bool bad_value(int) { return true; }
+void test_delete3() {
+	set<int> set_i;
+	for (auto iter = set_i.begin(); iter != set_i.end();/* 处理在后面进行 */) {
+		if (bad_value(*iter)) set_i.erase(iter++);//使用后置++，确保删除当前迭代器，而后iter为下一个有效值
+		else ++iter;//不需删除则正常递增
+	}
+}
+//时刻记得评估这些操作的效率和是否会产生不确定行为
+//
+
+
+//第10条：了解分配子（allocator）的约定和限制
+// 
+//如果编写自定义内存管理器，需要记住
+// 你的allocator是一个模板，参数T代表你为它分配内存的对象类型
+// 提供类型定义pointer和reference，但是始终让pointer为T*，reference为T&
+// 千万别让你的allocator拥有随对象而不同的状态。通常，分配子不该有非静态的数据成员
+// 传给分配子的allocate成员函数的是那些要求内存的对象的个数，而不是所需字节数；同时，这些函数返回T*指针，即使尚未有T对象被构造出来
+// 一定要提供嵌套的rebind模板，因为标准容器依赖该模板
+//
+
+
+//第11条：理解自定义分配子的合理用法
+// 
+//只要遵守了同一类型的分配子必须是等价的这一限制要求
+// 当使用自定义分配子来控制通用的内存管理策略
+// 或者聚集成员关系的时候
+// 或着在使用共享内存和其他特殊堆的时候
+// 就不会陷入麻烦
+//
+
+
+//第12条：切勿对STL容器的线程安全性有不切实际的依赖
+// 
+//最多只能期望
+// 多个线程读是安全的
+// 多个线程对不同容器的写是安全的
+//实现线程安全的方案
+// 对容器成员函数的每次调用，都锁住容器直至结束
+// 在容器返回的每个迭代器生存周期结束前，都锁住容器（begin或end等）
+// 对作用于容器的每个算法，都锁住该容器，直到算法结束（算法无法知道他们所操作的容器，所以不一定有意义）
+//锁的实现方案
+// 构造函数中获得一个互斥体，析构中释放，尽可能减少忘记解锁的可能
+template<typename container>
+class y_lock { //概念版
+public:
+	y_lock(const container& c) : c_(c) {
+		/* 获取锁 */
+		//get_mutex();
+	}
+	~y_lock() {
+		/* 释放锁 */
+		//release_mutex();
+	}
+private:
+	const container& c_;
+};
+//不能指望STL，安心手工同步
 //
 
 
