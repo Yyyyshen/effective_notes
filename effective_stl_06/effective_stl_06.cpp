@@ -111,6 +111,23 @@ void test_for_each2() {
 			return _Func;
 		}
 	*/
+	for_each(vec_w2.begin(), vec_w2.end(), mem_fun_ref(&widget2::test));//转换成for_each适用的调用形式
+	/* mem_fun_ref_t摘录
+		template <class _Result, class _Ty>
+		class mem_fun_ref_t : public unary_function<_Ty, _Result> { // functor adapter (*left.*pfunc)(), non-const *pfunc
+		public:
+			explicit mem_fun_ref_t(_Result (_Ty::*_Pm)()) : _Pmemfun(_Pm) {}
+
+			_Result operator()(_Ty& _Left) const {
+				return (_Left.*_Pmemfun)();//转换成 . 成员函数的调用形式
+			}
+
+		private:
+			_Result (_Ty::*_Pmemfun)(); // the member function pointer
+		};
+	*/
+
+
 	vector<widget2*> vec_pw2;
 	//for_each(vec_pw2.begin(), vec_pw2.end(), &widget2::test);//第三种形式，也无法通过编译
 	for_each(vec_pw2.begin(), vec_pw2.end(), mem_fun(&widget2::test));//mem_fun将第三种转换成for_each适配的形式，可以编译
