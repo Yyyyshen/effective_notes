@@ -9,6 +9,18 @@
 
 void* foo = nullptr;
 
+/**
+ * 1 泛型程序设计与C++标准库
+ */
+
+using namespace std;
+
+//
+//
+
+
+//
+//
 
 
 int main()
